@@ -1,0 +1,46 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Environment variables (API keys, secrets)
+.env
+
+# SQLite databases
+*.db
+*.sqlite3
+
+# Streamlit cache
+.streamlit/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# Logs
+*.log
+
+# Test cache
+.pytest_cache/
+
+# Distribution
+build/
+dist/
+*.egg-info/
+
+# Coverage reports
+.coverage
+htmlcov/
