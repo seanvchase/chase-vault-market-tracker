@@ -4,6 +4,7 @@ import plotly.express as px
 
 from services.ebay_api import search_ebay_cards
 from services.recommendations import get_recommendation
+from services.scanner import identify_card_from_image
 
 st.set_page_config(page_title="Chase Vault Market Tracker", layout="wide")
 
