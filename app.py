@@ -12,7 +12,7 @@ st.title("Chase Vault Market Tracker")
 st.write("Track trading card values, compare eBay prices, and manage your inventory.")
 
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Dashboard", "eBay Market Search", "Card Analysis"])
+page = st.sidebar.radio("Go to", ["Dashboard", "eBay Market Search", "Card Analysis", "AI Scanner"])
 
 if page == "Dashboard":
     st.header("Dashboard")
@@ -66,3 +66,22 @@ elif page == "Card Analysis":
 
         fig = px.bar(df, x="Category", y="Amount", title="Card Value Comparison")
         st.plotly_chart(fig)
+
+elif page == "AI Scanner":
+    st.header("AI Card Scanner")
+
+    uploaded_image = st.file_uploader("Upload a card image", type=["jpg", "jpeg", "png"])
+
+    if uploaded_image is not None:
+        st.image(uploaded_image, caption="Uploaded Card", use_container_width=True)
+
+        if st.button("Scan Card"):
+            result = identify_card_from_image(uploaded_image)
+
+            st.subheader("Scan Result")
+            st.write(f"Name: {result['name']}")
+            st.write(f"Game: {result['game']}")
+            st.write(f"Set: {result['set']}")
+            st.write(f"Card Number: {result['card_number']}")
+            st.write(f"Rarity: {result['rarity']}")
+            st.write(f"Condition Estimate: {result['condition_estimate']}")
