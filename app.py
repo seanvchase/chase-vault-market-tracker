@@ -5,9 +5,8 @@ import plotly.express as px
 from services.ebay_api import search_ebay_cards
 from services.recommendations import get_recommendation
 from services.scanner import identify_card_from_image
+from services.card_detector import analyze_card_image
 from database.database import create_cards_table, add_card, get_all_cards, delete_card
-from services.exporter import create_inventory_excel
-
 
 create_cards_table()
 
@@ -45,48 +44,55 @@ elif page == "eBay Market Search":
             st.write(f"Condition: {item['condition']}")
             st.divider()
 
-elif page == "Card Analysis":
-    st.header("Card Analysis")
-
-    card_name = st.text_input("Card name")
-    purchase_price = st.number_input("Purchase price", min_value=0.0, step=1.0)
-    current_price = st.number_input("Current market price", min_value=0.0, step=1.0)
-    quantity = st.number_input("Quantity", min_value=1, step=1)
-
-    if st.button("Analyze Card"):
-        total_cost = purchase_price * quantity
-        total_value = current_price * quantity
-        profit_loss = total_value - total_cost
-        recommendation = get_recommendation(purchase_price, current_price)
-
-        st.subheader("Card Analysis Results")
-        st.write(f"Card: {card_name}")
-        st.write(f"Total Cost: ${total_cost:.2f}")
-        st.write(f"Current Value: ${total_value:.2f}")
-        st.write(f"Profit/Loss: ${profit_loss:.2f}")
-        st.write(f"Recommendation: {recommendation}")
-
-        df = pd.DataFrame({
-            "Category": ["Cost", "Current Value"],
-            "Amount": [total_cost, total_value]
-        })
-
-        fig = px.bar(df, x="Category", y="Amount", title="Card Value Comparison")
-        st.plotly_chart(fig)
-
 elif page == "AI Scanner":
     st.header("AI Card Scanner")
-    st.write("Use your phone camera or computer webcam to scan a trading card.")
+    st.write("Use your phone camera to scan a trading card. The app will check if the card is centered and clear before adding it to inventory.")
 
     camera_image = st.camera_input("Take a picture of the card")
 
     if camera_image is not None:
-        st.image(camera_image, caption="Captured Card Image", use_container_width=True)
+        analysis = analyze_card_image(camera_image)
 
-        if st.button("Scan Card"):
-            scan_result = identify_card_from_image(camera_image)
-            st.session_state["scan_result"] = scan_result
-            st.success("Card scanned. Review the details below before adding it to inventory.")
+        st.subheader("Card Tracking Preview")
+
+        if analysis["annotated_image"] is not None:
+            st.image(
+                analysis["annotated_image"],
+                caption="Detected Card Outline",
+                use_container_width=True
+            )
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.metric("Center Score", f"{analysis['center_score']}%")
+
+        with col2:
+            st.metric("Sharpness", analysis["sharpness"])
+
+        with col3:
+            st.metric("Brightness", analysis["brightness"])
+
+        if analysis["ready"]:
+            st.success(analysis["message"])
+
+            st.subheader("Auto-Cropped Card")
+
+            if analysis["cropped_image"] is not None:
+                st.image(
+                    analysis["cropped_image"],
+                    caption="Cropped Card for AI Identification",
+                    use_container_width=True
+                )
+
+            if st.button("Use This Scan"):
+                scan_result = identify_card_from_image(analysis["cropped_image"])
+                st.session_state["scan_result"] = scan_result
+                st.success("Card scan accepted. Review the details below before adding it to inventory.")
+
+        else:
+            st.warning(analysis["message"])
+            st.info("Retake the picture after adjusting the card position, distance, lighting, or focus.")
 
     if "scan_result" in st.session_state:
         result = st.session_state["scan_result"]
@@ -95,18 +101,24 @@ elif page == "AI Scanner":
 
         with st.form("add_scanned_card_form"):
             name = st.text_input("Card Name", value=result["name"])
+
+            game_options = ["Pokemon", "One Piece", "Sports", "Magic", "Yu-Gi-Oh", "Other"]
+
             game = st.selectbox(
                 "Game",
-                ["Pokemon", "One Piece", "Sports", "Magic", "Yu-Gi-Oh", "Other"],
-                index=0
+                game_options,
+                index=game_options.index(result["game"]) if result["game"] in game_options else 5
             )
+
             set_name = st.text_input("Set Name", value=result["set"])
             card_number = st.text_input("Card Number", value=result["card_number"])
+
             condition = st.selectbox(
                 "Condition",
                 ["Raw", "Near Mint", "Lightly Played", "Moderately Played", "Damaged", "Graded", "Needs Review"],
                 index=6
             )
+
             quantity = st.number_input("Quantity", min_value=1, step=1)
             purchase_price = st.number_input("Purchase Price", min_value=0.0, step=1.0)
             current_value = st.number_input("Current Market Value", min_value=0.0, step=1.0)
