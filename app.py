@@ -2,9 +2,12 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+create_cards_table()
+
 from services.ebay_api import search_ebay_cards
 from services.recommendations import get_recommendation
 from services.scanner import identify_card_from_image
+from database.database import create_cards_table, add_card, get_all_cards, delete_card
 
 st.set_page_config(page_title="Chase Vault Market Tracker", layout="wide")
 
@@ -12,7 +15,10 @@ st.title("Chase Vault Market Tracker")
 st.write("Track trading card values, compare eBay prices, and manage your inventory.")
 
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Dashboard", "eBay Market Search", "Card Analysis", "AI Scanner"])
+page = st.sidebar.radio(
+    "Go to",
+    ["Dashboard", "Inventory", "eBay Market Search", "Card Analysis", "AI Scanner"]
+)
 
 if page == "Dashboard":
     st.header("Dashboard")
@@ -85,3 +91,76 @@ elif page == "AI Scanner":
             st.write(f"Card Number: {result['card_number']}")
             st.write(f"Rarity: {result['rarity']}")
             st.write(f"Condition Estimate: {result['condition_estimate']}")
+
+elif page == "Inventory":
+    st.header("Card Inventory")
+
+    st.subheader("Add a Card")
+
+    with st.form("add_card_form"):
+        name = st.text_input("Card Name")
+        game = st.selectbox("Game", ["Pokemon", "One Piece", "Sports", "Magic", "Yu-Gi-Oh", "Other"])
+        set_name = st.text_input("Set Name")
+        card_number = st.text_input("Card Number")
+        condition = st.selectbox("Condition", ["Raw", "Near Mint", "Lightly Played", "Moderately Played", "Damaged", "Graded"])
+        quantity = st.number_input("Quantity", min_value=1, step=1)
+        purchase_price = st.number_input("Purchase Price", min_value=0.0, step=1.0)
+        current_value = st.number_input("Current Market Value", min_value=0.0, step=1.0)
+
+        submitted = st.form_submit_button("Add Card")
+
+        if submitted:
+            add_card(
+                name,
+                game,
+                set_name,
+                card_number,
+                condition,
+                quantity,
+                purchase_price,
+                current_value
+            )
+            st.success(f"{name} added to inventory.")
+
+    st.divider()
+
+    st.subheader("Current Inventory")
+
+    cards = get_all_cards()
+
+    if cards:
+        inventory_data = []
+
+        for card in cards:
+            card_id, name, game, set_name, card_number, condition, quantity, purchase_price, current_value = card
+
+            total_cost = quantity * purchase_price
+            total_value = quantity * current_value
+            profit_loss = total_value - total_cost
+
+            inventory_data.append({
+                "ID": card_id,
+                "Name": name,
+                "Game": game,
+                "Set": set_name,
+                "Card Number": card_number,
+                "Condition": condition,
+                "Qty": quantity,
+                "Paid Each": purchase_price,
+                "Market Each": current_value,
+                "Total Cost": total_cost,
+                "Total Value": total_value,
+                "Profit/Loss": profit_loss
+            })
+
+        st.dataframe(inventory_data, use_container_width=True)
+
+        st.subheader("Delete a Card")
+        card_id_to_delete = st.number_input("Enter card ID to delete", min_value=1, step=1)
+
+        if st.button("Delete Card"):
+            delete_card(card_id_to_delete)
+            st.warning(f"Card ID {card_id_to_delete} deleted. Refresh the page to update the table.")
+
+    else:
+        st.info("No cards in inventory yet.")
