@@ -141,20 +141,40 @@ elif page == "Inventory":
 
 elif page == "eBay Market Search":
     st.header("eBay Market Search")
+    st.write("Search eBay listings and view card images, prices, conditions, and listing links.")
 
     card_name = st.text_input("Enter card name")
 
     if st.button("Search eBay"):
-        results = search_ebay_cards(card_name)
+        if not card_name.strip():
+            st.warning("Please enter a card name before searching.")
+        else:
+            results = search_ebay_cards(card_name)
 
-        st.subheader("Sample eBay Results")
+            st.subheader("eBay Results")
 
-        for item in results:
-            st.write(f"**{item['title']}**")
-            st.write(f"Price: ${item['price']}")
-            st.write(f"Condition: {item['condition']}")
-            st.divider()
+            for item in results:
+                col1, col2 = st.columns([1, 3])
 
+                with col1:
+                    if item.get("image_url"):
+                        st.image(
+                            item["image_url"],
+                            caption="Listing Image",
+                            use_container_width=True
+                        )
+                    else:
+                        st.write("No image available")
+
+                with col2:
+                    st.write(f"### {item['title']}")
+                    st.write(f"**Price:** ${item['price']}")
+                    st.write(f"**Condition:** {item['condition']}")
+
+                    if item.get("item_url"):
+                        st.link_button("View eBay Listing", item["item_url"])
+
+                st.divider()
 
 elif page == "Card Analysis":
     st.header("Card Analysis")
