@@ -6,6 +6,7 @@ from services.ebay_api import search_ebay_cards
 from services.recommendations import get_recommendation
 from services.scanner import identify_card_from_image
 from database.database import create_cards_table, add_card, get_all_cards, delete_card
+from services.exporter import create_inventory_excel
 
 create_cards_table()
 
