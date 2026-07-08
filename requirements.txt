@@ -5,3 +5,5 @@ pandas
 plotly
 pillow
 openpyxl
+opencv-python-headless
+numpy
