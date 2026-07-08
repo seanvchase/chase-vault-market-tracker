@@ -2,12 +2,12 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-create_cards_table()
-
 from services.ebay_api import search_ebay_cards
 from services.recommendations import get_recommendation
 from services.scanner import identify_card_from_image
 from database.database import create_cards_table, add_card, get_all_cards, delete_card
+
+create_cards_table()
 
 st.set_page_config(page_title="Chase Vault Market Tracker", layout="wide")
 
