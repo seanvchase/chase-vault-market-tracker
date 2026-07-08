@@ -76,52 +76,57 @@ elif page == "Card Analysis":
 
 elif page == "AI Scanner":
     st.header("AI Card Scanner")
+    st.write("Use your phone camera or computer webcam to scan a trading card.")
 
-    uploaded_image = st.file_uploader("Upload a card image", type=["jpg", "jpeg", "png"])
+    camera_image = st.camera_input("Take a picture of the card")
 
-    if uploaded_image is not None:
-        st.image(uploaded_image, caption="Uploaded Card", use_container_width=True)
+    if camera_image is not None:
+        st.image(camera_image, caption="Captured Card Image", use_container_width=True)
 
         if st.button("Scan Card"):
-            result = identify_card_from_image(uploaded_image)
+            scan_result = identify_card_from_image(camera_image)
+            st.session_state["scan_result"] = scan_result
+            st.success("Card scanned. Review the details below before adding it to inventory.")
 
-            st.subheader("Scan Result")
-            st.write(f"Name: {result['name']}")
-            st.write(f"Game: {result['game']}")
-            st.write(f"Set: {result['set']}")
-            st.write(f"Card Number: {result['card_number']}")
-            st.write(f"Rarity: {result['rarity']}")
-            st.write(f"Condition Estimate: {result['condition_estimate']}")
+    if "scan_result" in st.session_state:
+        result = st.session_state["scan_result"]
 
-elif page == "Inventory":
-    st.header("Card Inventory")
+        st.subheader("Review Scanned Card")
 
-    st.subheader("Add a Card")
-
-    with st.form("add_card_form"):
-        name = st.text_input("Card Name")
-        game = st.selectbox("Game", ["Pokemon", "One Piece", "Sports", "Magic", "Yu-Gi-Oh", "Other"])
-        set_name = st.text_input("Set Name")
-        card_number = st.text_input("Card Number")
-        condition = st.selectbox("Condition", ["Raw", "Near Mint", "Lightly Played", "Moderately Played", "Damaged", "Graded"])
-        quantity = st.number_input("Quantity", min_value=1, step=1)
-        purchase_price = st.number_input("Purchase Price", min_value=0.0, step=1.0)
-        current_value = st.number_input("Current Market Value", min_value=0.0, step=1.0)
-
-        submitted = st.form_submit_button("Add Card")
-
-        if submitted:
-            add_card(
-                name,
-                game,
-                set_name,
-                card_number,
-                condition,
-                quantity,
-                purchase_price,
-                current_value
+        with st.form("add_scanned_card_form"):
+            name = st.text_input("Card Name", value=result["name"])
+            game = st.selectbox(
+                "Game",
+                ["Pokemon", "One Piece", "Sports", "Magic", "Yu-Gi-Oh", "Other"],
+                index=0
             )
-            st.success(f"{name} added to inventory.")
+            set_name = st.text_input("Set Name", value=result["set"])
+            card_number = st.text_input("Card Number", value=result["card_number"])
+            condition = st.selectbox(
+                "Condition",
+                ["Raw", "Near Mint", "Lightly Played", "Moderately Played", "Damaged", "Graded", "Needs Review"],
+                index=6
+            )
+            quantity = st.number_input("Quantity", min_value=1, step=1)
+            purchase_price = st.number_input("Purchase Price", min_value=0.0, step=1.0)
+            current_value = st.number_input("Current Market Value", min_value=0.0, step=1.0)
+
+            submitted = st.form_submit_button("Add Scanned Card to Inventory")
+
+            if submitted:
+                add_card(
+                    name,
+                    game,
+                    set_name,
+                    card_number,
+                    condition,
+                    quantity,
+                    purchase_price,
+                    current_value
+                )
+
+                st.success(f"{name} added to inventory.")
+                del st.session_state["scan_result"]
 
     st.divider()
 
